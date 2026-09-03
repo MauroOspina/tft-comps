@@ -167,17 +167,46 @@ main { padding: 1rem 1.5rem 3rem; max-width: 1180px; margin: 0 auto; }
 .tier-section[data-tier="UNRANKED"] .tier-badge { background: var(--tier-un); color: #e4e6f2; }
 .tier-section[data-tier="X"] .tier-badge { background: var(--tier-un); color: #e4e6f2; }
 
-/* ---------- meta cards (solo lectura, sin calificar) ---------- */
+/* ---------- meta: franjas horizontales por tier, al estilo de las tier
+   lists de referencia (TFTAcademy) — bloque de color grande + fila de
+   comps como racimos de íconos, sin nombre a la vista por defecto ---------- */
 
-.meta-tier-list { gap: 1.2rem; }
-.meta-card { gap: 0.5rem; }
-.meta-card .comp-name { font-size: 0.95rem; }
-.meta-card .comp-card-foot { border-top: none; padding-top: 0; margin-top: 0; }
-.meta-card-source {
-  font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-faint);
-  display: flex; flex-direction: column; gap: 0.15rem;
+.meta-tier-list { gap: 0.55rem; margin-top: 1rem; }
+
+.tier-band { display: flex; align-items: stretch; border-radius: var(--radius); overflow: hidden; }
+
+.tier-tag {
+  flex-shrink: 0; width: 76px; padding: 0.4rem 0.3rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
+  font-family: var(--font-display); color: var(--accent-dark); text-align: center;
 }
-.meta-source-group a { color: var(--text-dim); }
+.tier-tag-letter { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+.tier-tag-label { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
+
+.tier-band-scroll {
+  flex: 1; display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.7rem 0.9rem; overflow-x: auto;
+  background: var(--bg-card); border: 1px solid var(--border-soft); border-left: none;
+}
+
+.meta-comp-chip { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+.meta-comp-icons { display: flex; }
+.meta-comp-icons img {
+  width: 36px; height: 36px; object-fit: cover; border-radius: 6px;
+  border: 2px solid var(--bg-card); margin-left: -8px;
+}
+.meta-comp-icons img:first-child { margin-left: 0; }
+.meta-comp-name {
+  font-size: 0.66rem; color: var(--text-faint); max-width: 110px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.tier-band[data-tier="S"] .tier-tag { background: linear-gradient(135deg, var(--tier-s-1), var(--tier-s-2), var(--tier-s-3)); }
+.tier-band[data-tier="A"] .tier-tag { background: var(--tier-a); }
+.tier-band[data-tier="B"] .tier-tag { background: var(--tier-b); }
+.tier-band[data-tier="C"] .tier-tag { background: var(--tier-c); color: #fff; }
+.tier-band[data-tier="X"] .tier-tag,
+.tier-band[data-tier="OTRO"] .tier-tag { background: var(--tier-un); color: #e4e6f2; }
 
 .tier-empty { color: var(--text-faint); font-size: 0.85rem; padding: 0.4rem 0 0.2rem; }
 

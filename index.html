@@ -126,16 +126,21 @@
   </article>
 </template>
 
-<template id="meta-card-template">
-  <article class="comp-card meta-card">
-    <header class="comp-card-head">
-      <h4 class="comp-name"></h4>
-    </header>
-    <div class="champion-row"></div>
-    <footer class="comp-card-foot">
-      <span class="meta-card-source"></span>
-    </footer>
-  </article>
+<template id="meta-tier-band-template">
+  <div class="tier-band">
+    <div class="tier-tag">
+      <span class="tier-tag-letter"></span>
+      <span class="tier-tag-label"></span>
+    </div>
+    <div class="tier-band-scroll"></div>
+  </div>
+</template>
+
+<template id="meta-comp-chip-template">
+  <div class="meta-comp-chip">
+    <div class="meta-comp-icons"></div>
+    <span class="meta-comp-name"></span>
+  </div>
 </template>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>

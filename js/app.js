@@ -203,7 +203,8 @@ function previewHexes(hexWrap, upTo) {
 // ---------- meta (solo lectura, la escribe el agente programado) ----------
 
 const metaTierListEl = document.getElementById("meta-tier-list");
-const metaCardTpl = document.getElementById("meta-card-template");
+const metaBandTpl = document.getElementById("meta-tier-band-template");
+const metaChipTpl = document.getElementById("meta-comp-chip-template");
 const metaSourceInfoEl = document.getElementById("meta-source-info");
 
 async function loadMeta() {
@@ -241,19 +242,55 @@ function renderMeta(rows) {
     const entries = grouped.get(tier.key);
     if (entries.length === 0) continue;
 
-    const section = tierSectionTpl.content.cloneNode(true);
-    const sectionEl = section.querySelector(".tier-section");
-    sectionEl.dataset.tier = tier.key;
-    sectionEl.querySelector(".tier-badge").textContent = tier.badge;
-    sectionEl.querySelector(".tier-name").textContent = tier.label;
-    sectionEl.querySelector(".tier-count").textContent = `${entries.length} comp${entries.length === 1 ? "" : "s"}`;
-    sectionEl.querySelector(".tier-empty").remove();
+    const band = metaBandTpl.content.cloneNode(true);
+    const bandEl = band.querySelector(".tier-band");
+    bandEl.dataset.tier = tier.key;
+    bandEl.querySelector(".tier-tag-letter").textContent = tier.badge;
+    bandEl.querySelector(".tier-tag-label").textContent = tier.label.split(" — ")[1] || tier.label;
 
-    const grid = sectionEl.querySelector(".comp-grid");
-    for (const row of entries) grid.appendChild(buildMetaCard(row));
+    const scroll = bandEl.querySelector(".tier-band-scroll");
+    for (const row of entries) scroll.appendChild(buildMetaChip(row));
 
-    metaTierListEl.appendChild(section);
+    metaTierListEl.appendChild(band);
   }
+}
+
+// Cada comp del meta se ve como un racimo de íconos de campeón, sin
+// nombre a la vista — igual que la tier list de TFTAcademy en la que nos
+// basamos. El nombre y el detalle de qué fuente dijo qué tier quedan en
+// el tooltip nativo (title), no ocupan espacio permanente en la franja.
+function buildMetaChip(row) {
+  const chip = metaChipTpl.content.cloneNode(true);
+  const chipEl = chip.querySelector(".meta-comp-chip");
+  chipEl.title = `${row.name}\n${sourceSummary(row.sources)}`;
+
+  // Sin ícono conocido para ese campeón, no metemos un <img> sin src (se
+  // ve como imagen rota) — se omite del racimo, el nombre de la comp
+  // abajo sigue reflejando la comp completa igual.
+  const iconsEl = chipEl.querySelector(".meta-comp-icons");
+  for (const champ of row.champions || []) {
+    if (!champ.icon) continue;
+    const img = document.createElement("img");
+    img.src = champ.icon;
+    img.alt = champ.name;
+    img.loading = "lazy";
+    img.addEventListener("error", () => img.remove(), { once: true });
+    iconsEl.appendChild(img);
+  }
+
+  chipEl.querySelector(".meta-comp-name").textContent = row.name;
+  return chip;
+}
+
+// "S: TFTAcademy, MetaTFT" — agrupa las fuentes por el tier que le dieron,
+// así se lee de una si hubo consenso o no.
+function sourceSummary(sources) {
+  const byTier = new Map();
+  for (const s of sources || []) {
+    if (!byTier.has(s.tier)) byTier.set(s.tier, []);
+    byTier.get(s.tier).push(s.name);
+  }
+  return [...byTier.entries()].map(([tier, names]) => `${tier}: ${names.join(", ")}`).join(" · ");
 }
 
 // Acepta tanto un string (comps del grupo, texto libre sin ícono conocido)
@@ -278,47 +315,6 @@ function buildChampionChip(champ) {
   }
   chip.append(name);
   return chip;
-}
-
-function buildMetaCard(row) {
-  const card = metaCardTpl.content.cloneNode(true);
-  card.querySelector(".comp-name").textContent = row.name;
-
-  const champRow = card.querySelector(".champion-row");
-  for (const champ of row.champions || []) {
-    champRow.appendChild(buildChampionChip(champ));
-  }
-
-  // Agrupa las fuentes por el tier que cada una le dio, así una comp que
-  // coincide entre sitios se lee "S: TFTAcademy, MetaTFT" de un vistazo,
-  // en vez de una lista plana que no dice si hubo consenso o no.
-  const sourceEl = card.querySelector(".meta-card-source");
-  const byTier = new Map();
-  for (const s of row.sources || []) {
-    if (!byTier.has(s.tier)) byTier.set(s.tier, []);
-    byTier.get(s.tier).push(s);
-  }
-  for (const [tier, srcs] of byTier) {
-    const group = document.createElement("span");
-    group.className = "meta-source-group";
-    group.append(`${tier}: `);
-    srcs.forEach((s, i) => {
-      if (i > 0) group.append(", ");
-      if (s.url) {
-        const link = document.createElement("a");
-        link.href = s.url;
-        link.target = "_blank";
-        link.rel = "noopener";
-        link.textContent = s.name;
-        group.appendChild(link);
-      } else {
-        group.append(s.name);
-      }
-    });
-    sourceEl.appendChild(group);
-  }
-
-  return card;
 }
 
 function relativeTime(isoString) {
