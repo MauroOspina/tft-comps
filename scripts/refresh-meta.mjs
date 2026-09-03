@@ -115,7 +115,12 @@ const RECONCILE_SCHEMA = {
   required: ["comps"],
 };
 
-async function callGemini(prompt, schema) {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// El free tier de Gemini devuelve 503 ("high demand") o 429 (rate limit)
+// de vez en cuando bajo carga — son transitorios, no errores nuestros.
+// Reintentamos con backoff antes de darnos por vencidos.
+async function callGemini(prompt, schema, attempt = 1) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
   const res = await fetch(url, {
     method: "POST",
@@ -125,7 +130,19 @@ async function callGemini(prompt, schema) {
       generationConfig: { responseMimeType: "application/json", responseSchema: schema },
     }),
   });
-  if (!res.ok) throw new Error(`Gemini respondió ${res.status}: ${await res.text()}`);
+
+  if (!res.ok) {
+    const bodyText = await res.text();
+    const transient = res.status === 503 || res.status === 429;
+    if (transient && attempt < 4) {
+      const waitMs = attempt * 15000;
+      console.log(`  Gemini respondió ${res.status} (intento ${attempt}/3), reintentando en ${waitMs / 1000}s...`);
+      await sleep(waitMs);
+      return callGemini(prompt, schema, attempt + 1);
+    }
+    throw new Error(`Gemini respondió ${res.status}: ${bodyText}`);
+  }
+
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error("Gemini no devolvió contenido: " + JSON.stringify(data));
