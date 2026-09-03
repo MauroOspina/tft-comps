@@ -2,24 +2,28 @@
 // carga directo como <script> después de config.js y del cliente de
 // Supabase (ver index.html).
 
+// "S — Prismática" / "A — Oro" etc. era una licencia nuestra (esos nombres
+// son de la rareza de augments/traits en TFT, no de tiers de comps) — ni
+// TFTAcademy ni MetaTFT le ponen nombre al tier, solo "S TIER", "A TIER".
+// Sacado: la etiqueta ahora es la misma que usan esos sitios.
 const TIERS = [
-  { key: "S", label: "S — Prismática", badge: "S" },
-  { key: "A", label: "A — Oro", badge: "A" },
-  { key: "B", label: "B — Plata", badge: "B" },
-  { key: "C", label: "C — Bronce", badge: "C" },
+  { key: "S", label: "S TIER", badge: "S" },
+  { key: "A", label: "A TIER", badge: "A" },
+  { key: "B", label: "B TIER", badge: "B" },
+  { key: "C", label: "C TIER", badge: "C" },
   { key: "UNRANKED", label: "Sin calificar todavía", badge: "?" },
 ];
 
 // El agente programado guarda el tier tal cual lo lee de la página fuente
-// (S/A/B/C/X, donde X suele ser "situacional"). Mismo orden visual que la
-// tier list del grupo, más una entrada para lo que no matchee ninguna letra
-// conocida en vez de perderlo silenciosamente.
+// (S/A/B/C/X, donde X es la sección "Situational" de TFTAcademy). Mismo
+// orden visual que la tier list del grupo, más una entrada para lo que no
+// matchee ninguna letra conocida en vez de perderlo silenciosamente.
 const META_TIERS = [
-  { key: "S", label: "S — Prismática", badge: "S" },
-  { key: "A", label: "A — Oro", badge: "A" },
-  { key: "B", label: "B — Plata", badge: "B" },
-  { key: "C", label: "C — Bronce", badge: "C" },
-  { key: "X", label: "Situacional", badge: "X" },
+  { key: "S", label: "S TIER", badge: "S" },
+  { key: "A", label: "A TIER", badge: "A" },
+  { key: "B", label: "B TIER", badge: "B" },
+  { key: "C", label: "C TIER", badge: "C" },
+  { key: "X", label: "SITUATIONAL", badge: "X" },
   { key: "OTRO", label: "Otras", badge: "·" },
 ];
 
@@ -246,7 +250,7 @@ function renderMeta(rows) {
     const bandEl = band.querySelector(".tier-band");
     bandEl.dataset.tier = tier.key;
     bandEl.querySelector(".tier-tag-letter").textContent = tier.badge;
-    bandEl.querySelector(".tier-tag-label").textContent = tier.label.split(" — ")[1] || tier.label;
+    bandEl.querySelector(".tier-tag-label").textContent = tier.label;
 
     const scroll = bandEl.querySelector(".tier-band-scroll");
     for (const row of entries) scroll.appendChild(buildMetaChip(row));
