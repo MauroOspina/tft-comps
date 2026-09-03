@@ -131,12 +131,15 @@ async function callGemini(prompt, schema, attempt = 1) {
     }),
   });
 
+  const MAX_ATTEMPTS = 6;
   if (!res.ok) {
     const bodyText = await res.text();
     const transient = res.status === 503 || res.status === 429;
-    if (transient && attempt < 4) {
-      const waitMs = attempt * 15000;
-      console.log(`  Gemini respondió ${res.status} (intento ${attempt}/3), reintentando en ${waitMs / 1000}s...`);
+    if (transient && attempt < MAX_ATTEMPTS) {
+      const waitMs = attempt * 20000;
+      console.log(
+        `  Gemini respondió ${res.status} (intento ${attempt}/${MAX_ATTEMPTS - 1}), reintentando en ${waitMs / 1000}s...`
+      );
       await sleep(waitMs);
       return callGemini(prompt, schema, attempt + 1);
     }
@@ -224,16 +227,26 @@ async function main() {
 
   try {
     for (const source of SOURCES) {
-      console.log(`Leyendo ${source.name}...`);
-      const html = source.needsBrowser
-        ? await fetchWithBrowser(browser, source.url)
-        : await fetchStatic(source.url);
-      const comps = await extractFromSource(source, cleanHtml(html));
-      console.log(`  -> ${comps.length} comps encontradas en ${source.name}`);
-      perSource.push({ source: source.name, comps });
+      try {
+        console.log(`Leyendo ${source.name}...`);
+        const html = source.needsBrowser
+          ? await fetchWithBrowser(browser, source.url)
+          : await fetchStatic(source.url);
+        const comps = await extractFromSource(source, cleanHtml(html));
+        console.log(`  -> ${comps.length} comps encontradas en ${source.name}`);
+        perSource.push({ source: source.name, comps });
+      } catch (err) {
+        // Una fuente caída no debería tumbar la corrida entera — seguimos
+        // con las que sí funcionaron y lo dejamos anotado en el log.
+        console.error(`  Falló ${source.name}, la salteamos esta corrida: ${err.message}`);
+      }
     }
   } finally {
     await browser.close();
+  }
+
+  if (perSource.length === 0) {
+    throw new Error("Ninguna de las 3 fuentes respondió — no hay nada para reconciliar.");
   }
 
   console.log("Reconciliando fuentes...");
