@@ -207,6 +207,10 @@ main { padding: 1rem 1.5rem 3rem; max-width: 1180px; margin: 0 auto; }
   clip-path: polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%);
   background: var(--bg-raised); border: 1px solid var(--border-soft);
   padding: 0.28em 0.85em; font-size: 0.78rem; color: var(--text-dim);
+  display: inline-flex; align-items: center; gap: 0.35em;
+}
+.champion-chip img {
+  width: 16px; height: 16px; border-radius: 3px; object-fit: cover; flex-shrink: 0;
 }
 
 .comp-items, .comp-description { margin: 0; font-size: 0.85rem; color: var(--text-dim); }

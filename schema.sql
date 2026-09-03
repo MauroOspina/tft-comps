@@ -34,11 +34,13 @@ create index if not exists ratings_comp_id_idx on ratings (comp_id);
 -- `sources` guarda, por cada sitio que reportó esta comp, su nombre, su
 -- propio tier para ella y la url — así la tarjeta puede mostrar "S según
 -- TFTAcademy y MetaTFT, A según Mobalytics" en vez de un solo tier ciego.
+-- `champions` es un array de {name, icon} — icon puede ser null si no se
+-- encontró la imagen real para ese campeón esa corrida.
 create table if not exists meta_comps (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   tier text not null,
-  champions text[] not null default '{}',
+  champions jsonb not null default '[]',
   sources jsonb not null default '[]',
   fetched_at timestamptz not null default now()
 );

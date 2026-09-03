@@ -163,10 +163,7 @@ function buildCard({ comp, avg, count, mine }) {
 
   const champRow = card.querySelector(".champion-row");
   for (const champ of comp.champions || []) {
-    const chip = document.createElement("span");
-    chip.className = "champion-chip";
-    chip.textContent = champ.trim();
-    champRow.appendChild(chip);
+    champRow.appendChild(buildChampionChip(champ));
   }
 
   card.querySelector(".comp-items").textContent = comp.core_items || "";
@@ -259,16 +256,37 @@ function renderMeta(rows) {
   }
 }
 
+// Acepta tanto un string (comps del grupo, texto libre sin ícono conocido)
+// como un {name, icon} (comps del meta, con ícono real cuando se pudo
+// sacar de la fuente) — así el mismo chip sirve para las dos secciones.
+function buildChampionChip(champ) {
+  const isObj = typeof champ === "object" && champ !== null;
+  const name = (isObj ? champ.name : champ).trim();
+  const icon = isObj ? champ.icon : null;
+
+  const chip = document.createElement("span");
+  chip.className = "champion-chip";
+  if (icon) {
+    const img = document.createElement("img");
+    img.src = icon;
+    img.alt = "";
+    img.loading = "lazy";
+    // Si la url guardada alguna vez deja de servir, no dejamos un ícono
+    // roto — nos caemos al chip de solo texto.
+    img.addEventListener("error", () => img.remove(), { once: true });
+    chip.appendChild(img);
+  }
+  chip.append(name);
+  return chip;
+}
+
 function buildMetaCard(row) {
   const card = metaCardTpl.content.cloneNode(true);
   card.querySelector(".comp-name").textContent = row.name;
 
   const champRow = card.querySelector(".champion-row");
   for (const champ of row.champions || []) {
-    const chip = document.createElement("span");
-    chip.className = "champion-chip";
-    chip.textContent = champ.trim();
-    champRow.appendChild(chip);
+    champRow.appendChild(buildChampionChip(champ));
   }
 
   // Agrupa las fuentes por el tier que cada una le dio, así una comp que

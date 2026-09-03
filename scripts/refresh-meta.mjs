@@ -175,6 +175,22 @@ async function callGemini(prompt, schema, attempt = 1) {
   return JSON.parse(text);
 }
 
+// TFTAcademy sirve los íconos de campeón con un patrón bien regular:
+// .../champion_icons/<código>_<Nombre>.webp — lo sacamos por regex en vez
+// de pedírselo a Gemini, para no arriesgarnos a que una IA transcriba mal
+// una URL larga. Sirve de mapa nombre -> ícono para todas las comps,
+// vengan de la fuente que vengan.
+function extractChampionIcons(html) {
+  const icons = new Map();
+  const re = /https:\/\/[^"'\s]*champion_icons\/[\w%.-]*?_([A-Za-z]+)\.webp/g;
+  let match;
+  while ((match = re.exec(html))) {
+    const [url, name] = [match[0], match[1]];
+    if (!icons.has(name)) icons.set(name, url);
+  }
+  return icons;
+}
+
 async function extractFromSource(source, html) {
   const prompt = `Esta es una tier list de composiciones (comps) de Teamfight Tactics (TFT), tomada del sitio ${source.name}. El HTML viene con clases y atributos ruidosos de un framework de UI — ignoralos y enfocate en el contenido real: encabezados de tier (S/A/B/C/Situational) y, agrupadas debajo de cada uno, las comps con sus campeones clave.
 
@@ -188,7 +204,7 @@ Si una sección de tier dice algo como "no comp meets the criteria" o está vac�
 HTML:
 ${html}`;
   const result = await callGemini(prompt, EXTRACT_SCHEMA);
-  return result.comps || [];
+  return { comps: result.comps || [], icons: extractChampionIcons(html) };
 }
 
 async function reconcile(perSource) {
@@ -208,7 +224,7 @@ ${JSON.stringify(perSource, null, 2)}`;
   return result.comps || [];
 }
 
-async function writeToSupabase(comps) {
+async function writeToSupabase(comps, iconMap) {
   const headers = {
     apikey: SUPABASE_SECRET_KEY,
     Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
@@ -228,7 +244,13 @@ async function writeToSupabase(comps) {
   const rows = comps.map((c) => ({
     name: c.name,
     tier: c.tier,
-    champions: c.champions,
+    // Los nombres de archivo del ícono no llevan espacios ("ElderDragon")
+    // aunque el nombre que devuelve Gemini sí ("Elder Dragon") — probamos
+    // sin espacios como respaldo antes de darnos por vencidos.
+    champions: c.champions.map((name) => ({
+      name,
+      icon: iconMap.get(name) || iconMap.get(name.replace(/\s+/g, "")) || null,
+    })),
     sources: (c.sources || []).map((s) => ({
       name: s.name,
       tier: s.tier,
@@ -247,6 +269,7 @@ async function writeToSupabase(comps) {
 async function main() {
   const browser = await chromium.launch();
   const perSource = [];
+  const iconMap = new Map(); // nombre de campeón -> url de ícono, primera fuente que lo tenga gana
 
   try {
     for (const source of SOURCES) {
@@ -255,8 +278,10 @@ async function main() {
         const html = source.needsBrowser
           ? await fetchWithBrowser(browser, source.url)
           : await fetchStatic(source.url);
-        const comps = await extractFromSource(source, cleanHtml(html));
-        console.log(`  -> ${comps.length} comps encontradas en ${source.name}`);
+        const cleaned = cleanHtml(html);
+        const { comps, icons } = await extractFromSource(source, cleaned);
+        console.log(`  -> ${comps.length} comps encontradas en ${source.name}, ${icons.size} íconos`);
+        for (const [name, url] of icons) if (!iconMap.has(name)) iconMap.set(name, url);
         perSource.push({ source: source.name, comps });
       } catch (err) {
         // Una fuente caída no debería tumbar la corrida entera — seguimos
@@ -280,8 +305,10 @@ async function main() {
     if (count) console.log(`  ${tier}: ${count}`);
   }
 
+  console.log(`Íconos de campeón conocidos: ${iconMap.size}`);
+
   console.log("Escribiendo en Supabase...");
-  await writeToSupabase(finalComps);
+  await writeToSupabase(finalComps, iconMap);
   console.log("Listo.");
 }
 
