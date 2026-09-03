@@ -175,18 +175,29 @@ async function callGemini(prompt, schema, attempt = 1) {
   return JSON.parse(text);
 }
 
-// TFTAcademy sirve los íconos de campeón con un patrón bien regular:
-// .../champion_icons/<código>_<Nombre>.webp — lo sacamos por regex en vez
-// de pedírselo a Gemini, para no arriesgarnos a que una IA transcriba mal
-// una URL larga. Sirve de mapa nombre -> ícono para todas las comps,
-// vengan de la fuente que vengan.
+// Normaliza para cruzar nombres entre fuentes que los escriben distinto
+// ("Elder Dragon" vs "elderdragon"): todo minúscula, sin espacios.
+const normalizeChampionKey = (name) => name.toLowerCase().replace(/\s+/g, "");
+
+// Cada sitio sirve los íconos de campeón con su propio patrón de URL
+// regular — los sacamos por regex en vez de pedírselo a Gemini, para no
+// arriesgarnos a que una IA transcriba mal una URL larga. Probado a mano
+// contra cada sitio:
+//   TFTAcademy: .../champion_icons/<código>_<Nombre>.webp
+//   MetaTFT:    .../champions/tft<set>_<nombre en minúscula>.png
+const ICON_PATTERNS = [
+  /https:\/\/[^"'\s]*champion_icons\/[\w%.-]*?_([A-Za-z]+)\.webp/g,
+  /https:\/\/[^"'\s]*\/champions\/tft\d+_([a-z]+)\.png/gi,
+];
+
 function extractChampionIcons(html) {
   const icons = new Map();
-  const re = /https:\/\/[^"'\s]*champion_icons\/[\w%.-]*?_([A-Za-z]+)\.webp/g;
-  let match;
-  while ((match = re.exec(html))) {
-    const [url, name] = [match[0], match[1]];
-    if (!icons.has(name)) icons.set(name, url);
+  for (const pattern of ICON_PATTERNS) {
+    let match;
+    while ((match = pattern.exec(html))) {
+      const key = normalizeChampionKey(match[1]);
+      if (!icons.has(key)) icons.set(key, match[0]);
+    }
   }
   return icons;
 }
@@ -244,12 +255,9 @@ async function writeToSupabase(comps, iconMap) {
   const rows = comps.map((c) => ({
     name: c.name,
     tier: c.tier,
-    // Los nombres de archivo del ícono no llevan espacios ("ElderDragon")
-    // aunque el nombre que devuelve Gemini sí ("Elder Dragon") — probamos
-    // sin espacios como respaldo antes de darnos por vencidos.
     champions: c.champions.map((name) => ({
       name,
-      icon: iconMap.get(name) || iconMap.get(name.replace(/\s+/g, "")) || null,
+      icon: iconMap.get(normalizeChampionKey(name)) || null,
     })),
     sources: (c.sources || []).map((s) => ({
       name: s.name,
