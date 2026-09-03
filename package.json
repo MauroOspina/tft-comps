@@ -1,0 +1,11 @@
+{
+  "name": "tft-comps-meta-refresh",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "refresh-meta": "node scripts/refresh-meta.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0"
+  }
+}

@@ -1,0 +1,26 @@
+name: Actualizar meta de TFT
+
+on:
+  schedule:
+    - cron: "0 13 * * *" # 8:00am hora Bogotá, todos los días
+  workflow_dispatch: {} # botón "Run workflow" para probar a mano
+
+jobs:
+  refresh-meta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: node scripts/refresh-meta.mjs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

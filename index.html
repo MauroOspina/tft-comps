@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaComps — tier list de comps TFT</title>
+<meta name="description" content="Tier list de composiciones de TFT armada y calificada por el grupo.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><polygon points=%2250,3 93,26 93,74 50,97 7,74 7,26%22 fill=%22%2313d6b5%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,3 93,26 93,74 50,97 7,74 7,26"/></svg>
+    <h1>Meta<span>Comps</span></h1>
+  </div>
+  <p class="tagline">Set 18 · tier list del grupo</p>
+  <button id="add-comp-btn" class="btn btn-primary">+ Aportar comp</button>
+</header>
+
+<div id="setup-banner" class="banner" hidden>
+  <strong>Falta conectar la base de datos.</strong>
+  Editá <code>js/config.js</code> con la URL y anon key de tu proyecto de
+  Supabase (ver README.md) para que las comps se guarden y se compartan.
+</div>
+
+<div id="error-banner" class="banner banner-error" hidden></div>
+
+<main>
+  <section class="meta-block">
+    <div class="block-head">
+      <h2>Meta ahora</h2>
+      <span id="meta-source-info" class="meta-source-info"></span>
+    </div>
+    <div id="meta-tier-list" class="tier-list meta-tier-list" aria-live="polite">
+      <p class="loading">Leyendo el meta…</p>
+    </div>
+  </section>
+
+  <section class="group-block">
+    <div class="block-head">
+      <h2>Tier list del grupo</h2>
+      <div class="identity-bar">
+        <label for="rater-name">Jugás como</label>
+        <input id="rater-name" type="text" maxlength="24" placeholder="tu nombre o nick" autocomplete="off">
+      </div>
+    </div>
+    <div id="tier-list" class="tier-list" aria-live="polite">
+      <p class="loading">Cargando comps…</p>
+    </div>
+  </section>
+</main>
+
+<div id="modal-overlay" class="modal-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h2 id="modal-title">Aportar comp</h2>
+      <button id="modal-close" class="btn-icon" aria-label="Cerrar">✕</button>
+    </div>
+    <form id="comp-form">
+      <label>
+        Nombre de la comp
+        <input id="f-name" type="text" required maxlength="60" placeholder="ej. Sivir Hipercarry">
+      </label>
+      <label>
+        Estilo
+        <select id="f-playstyle">
+          <option>Fast 8</option>
+          <option>Reroll</option>
+          <option selected>Standard</option>
+          <option>Slow roll</option>
+        </select>
+      </label>
+      <label>
+        Campeones clave (separados por coma)
+        <input id="f-champions" type="text" required placeholder="Sivir, Draven, Malphite, Kayle">
+      </label>
+      <label>
+        Items core
+        <input id="f-items" type="text" placeholder="Rageblade, IE, Runaan's...">
+      </label>
+      <label>
+        Notas / cuándo jugarla
+        <textarea id="f-description" rows="3" maxlength="300" placeholder="Cuándo la contesteas, con qué augments funciona mejor..."></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="modal-cancel" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Publicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<template id="tier-section-template">
+  <section class="tier-section">
+    <header class="tier-head">
+      <span class="tier-badge"></span>
+      <h3 class="tier-name"></h3>
+      <span class="tier-count"></span>
+    </header>
+    <div class="tier-empty" hidden>Todavía no hay comps acá.</div>
+    <div class="comp-grid"></div>
+  </section>
+</template>
+
+<template id="comp-card-template">
+  <article class="comp-card">
+    <header class="comp-card-head">
+      <h4 class="comp-name"></h4>
+      <span class="comp-playstyle"></span>
+    </header>
+    <div class="champion-row"></div>
+    <p class="comp-items"></p>
+    <p class="comp-description"></p>
+    <footer class="comp-card-foot">
+      <div class="rating-block">
+        <div class="rating-hexes" role="group" aria-label="Calificar comp"></div>
+        <span class="rating-summary"></span>
+      </div>
+      <span class="comp-meta"></span>
+    </footer>
+  </article>
+</template>
+
+<template id="meta-card-template">
+  <article class="comp-card meta-card">
+    <header class="comp-card-head">
+      <h4 class="comp-name"></h4>
+    </header>
+    <div class="champion-row"></div>
+    <footer class="comp-card-foot">
+      <span class="meta-card-source"></span>
+    </footer>
+  </article>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
