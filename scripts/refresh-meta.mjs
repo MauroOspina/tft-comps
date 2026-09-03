@@ -10,7 +10,12 @@
 import { chromium } from "playwright";
 
 const GEMINI_API_KEY = requireEnv("GEMINI_API_KEY");
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+// "gemini-flash-latest" apunta hoy a gemini-3.8-flash (recién lanzado),
+// que en el free tier viene con una cuota diaria arrancando en apenas 20
+// pedidos — probado a mano, se agota con esta sola tarea. Un modelo
+// "flash-lite" ya establecido trae mucha más cuota gratis y de sobra
+// alcanza para extracción/reconciliación estructurada como esta.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 const SUPABASE_URL = requireEnv("SUPABASE_URL");
 const SUPABASE_SECRET_KEY = requireEnv("SUPABASE_SECRET_KEY");
 
