@@ -36,17 +36,23 @@ function requireEnv(name) {
   return value;
 }
 
-// El HTML real trae toneladas de SVG inline, data: URIs y CSS que no
-// aportan nada a la extracción y sí inflan el prompt — los sacamos antes
-// de mandarlo a Gemini.
+// El HTML real (probado a mano contra TFTAcademy) es un enredo de clases
+// de utilidad, estilos inline y comentarios marcadores de framework
+// (Svelte/React) — nada de eso aporta a la extracción, y un prompt de
+// >100K caracteres resultó bastante menos confiable contra el free tier de
+// Gemini (más 503 de "high demand") que uno chico. Recortamos agresivo:
+// solo importan los textos visibles y los atributos src/href/alt (ahí
+// vive el nombre de campeón en las imágenes de ícono).
 function cleanHtml(html) {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/\s(src|href)="data:[^"]*"/gi, "")
+    .replace(/\s(class|style|data-[\w-]+|id)="[^"]*"/gi, "")
     .replace(/\s+/g, " ")
-    .slice(0, 150000);
+    .slice(0, 60000);
 }
 
 async function fetchStatic(url) {
@@ -58,8 +64,13 @@ async function fetchStatic(url) {
 async function fetchWithBrowser(browser, url) {
   const page = await browser.newPage({ userAgent: UA });
   try {
-    await page.goto(url, { waitUntil: "networkidle", timeout: 45000 });
-    await page.waitForTimeout(2500); // margen para hidratación / animaciones tardías
+    // "networkidle" nunca llega en sitios con analytics/ads pegando
+    // requests de fondo sin parar (probado a mano: timeout seguro en
+    // MetaTFT y Mobalytics). "domcontentloaded" + una espera fija le da
+    // tiempo al JS del cliente a hidratar sin depender de que la red se
+    // quede quieta del todo.
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+    await page.waitForTimeout(7000);
     return await page.content();
   } finally {
     await page.close();
@@ -127,7 +138,14 @@ async function callGemini(prompt, schema, attempt = 1) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: schema },
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        // Extracción/reconciliación acotada, no hace falta razonamiento
+        // profundo — además, probado a mano, los requests sin thinking
+        // resultaron más livianos y confiables contra el free tier.
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     }),
   });
 
