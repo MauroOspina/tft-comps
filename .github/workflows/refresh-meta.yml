@@ -1,8 +1,12 @@
 name: Actualizar meta de TFT
 
 on:
-  schedule:
-    - cron: "0 13 * * *" # 8:00am hora Bogotá, todos los días
+  # Proyecto pausado — cron de "0 13 * * *" (8:00am hora Bogotá, diario)
+  # desactivado a propósito. Queda el botón manual (Actions -> Run
+  # workflow) por si se retoma más adelante. Reactivar: descomentar
+  # "schedule" de acá abajo.
+  # schedule:
+  #   - cron: "0 13 * * *"
   workflow_dispatch: {} # botón "Run workflow" para probar a mano
 
 jobs:
